@@ -8,6 +8,28 @@
 
 import UIKit
 
+extension Date{
+    func timeAgoDisplay() -> String{
+    let secondsAgo = Int(Date().timeIntervalSince(self))
+    let minute = 60
+    let hour = 60 * minute
+    let day = 24 * hour
+    let week = 7 * day
+        
+        if secondsAgo < minute {
+                    return "\(secondsAgo)s"
+                } else if secondsAgo < hour {
+                    return "\(secondsAgo / minute)m"
+                } else if secondsAgo < day {
+                    return "\(secondsAgo / hour)h"
+                } else if secondsAgo < week {
+                    return "\(secondsAgo / day)d"
+                }
+
+                return "\(secondsAgo / week)w"
+            }
+        }
+
 class HomeTableTableViewController: UITableViewController {
     
     var tweetArray = [NSDictionary]()
@@ -76,36 +98,92 @@ class HomeTableTableViewController: UITableViewController {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "tweetCell", for: indexPath) as! TweetCellTableViewCell
         
+//        let tweetView = tableView.dequeueReusableCell(withIdentifier: "toTweet", for: indexPath) as! TweetViewController
+//
         let user = tweetArray[indexPath.row]["user"] as! NSDictionary
         
         cell.userNameLabel.text = user["name"] as! String
         cell.tweetContent.text = tweetArray[indexPath.row]["text"] as! String
+        
+        cell.timeTweet.text = getRelativeTime(timeString: (tweetArray[indexPath.row]["created_at"] as? String)!)
+        
         
         let imageURL = URL(string: (user["profile_image_url_https"] as? String)!)
         let data = try? Data(contentsOf: imageURL!)
        
         if let imageData = data {
             cell.profileImageView.image = UIImage(data: imageData)
+            //tweetView.profileView.image = UIImage(data: imageData)
         }
         
+        cell.setFavorite(tweetArray[indexPath.row]["favorited"] as! Bool)
+        cell.tweetId = tweetArray[indexPath.row]["id"] as! Int
+        cell.setRetweeted(tweetArray[indexPath.row]["retweeted"] as! Bool)
         return cell
         
     }
+    
+    func getRelativeTime(timeString: String) -> String{
+
+        let time: Date
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "EEE MMM d HH:mm:ss Z y"
+        time = dateFormatter.date(from: timeString)!
+        return time.timeAgoDisplay()
+        
+       // let date = dateFormatter.dateFromString(timeString)
+
+    }
+    
+    
+
+//        if secondAgo < minute{
+//                return "\(secondAgo) sec ago"
+//        }
+//            if(secondAgo > minute && secondAgo < hour){
+//                return "\(secondAgo) min ago"
+//            }
+//    if(secondAgo > hour && secondAgo < day){
+//                return "\(secondAgo) hr ago"
+//        }
+//            if(secondAgo > day && secondAgo <  week){
+//                        return "\(secondAgo) week ago"
+//                }
+//            else{
+//                return "\(secondAgo) years ago"
+//            }
+//
+//        }
+//
+//    }()
+            
+            
+
     
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        loadTweet()
+        
         
         myRefreshControl.addTarget(self, action: #selector(loadTweet), for: .valueChanged)
         tableView.refreshControl = myRefreshControl
+        self.tableView.rowHeight = UITableView.automaticDimension
+        self.tableView.estimatedRowHeight = 150
+        loadTweet()
 
         // Uncomment the following line to preserve selection between presentations
         // self.clearsSelectionOnViewWillAppear = false
 
         // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
         // self.navigationItem.rightBarButtonItem = self.editButtonItem
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        self.loadTweet()
+        
+        
     }
 
     // MARK: - Table view data source
